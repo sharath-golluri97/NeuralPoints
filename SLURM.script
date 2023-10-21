@@ -1,0 +1,75 @@
+#!/bin/sh
+################################### Start of SLRUM Script ###################################
+################################### Select your cluster ###################################
+###SBATCH --cluster=ub-hpc
+#SBATCH --cluster=faculty
+## Select your partition
+#SBATCH --partition=scavenger --qos=scavenger
+# Exclusive compute -> avoids mix state => no sharing of resource
+#SBATCH --exclusive
+################################### Set your running time ###################################
+#SBATCH --time=72:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=12
+################################### Select your GPU ###################################
+## Use snodes command to check their status first
+#SBATCH --gres=gpu:a100-pcie-80gb:1
+##SBATCH --gres=gpu:tesla_v100-pcie-32gb:2
+###SBATCH --gres=gpu:tesla_v100-pcie-32gb:1
+####SBATCH --gres=gpu:tesla_v100-pcie-16gb:1
+################################### Set your memory ###################################
+########## SBATCH --mem-per-node=2G
+# Memory per node specification is in MB. It is optional.
+# The default limit is 3000MB per core.
+################################### Set your job name ###################################
+#SBATCH --job-name="neural_points_infer_sketchfab2_v2"
+## Set output name (not work very well right now)
+### SBATCH --output= "logs/slurm/result_infer_$(date +"%Y_%m_%d_%k_%M_%S").log"
+############################ Set the email to receive email #############################
+#SBATCH --mail-user=sgolluri@buffalo.edu
+#SBATCH --mail-type=ALL
+##SBATCH --requeue
+#Specifies that the job will be requeued after a node failure.
+#The default is that the job will not be requeued.
+################### Beginning of your scipt, it is written with shell ####################
+echo "SLURM_JOBID="$SLURM_JOBID
+echo "SLURM_TIME="$(date +"%Y_%m_%d_%k_%M_%S")
+echo "SLURM_JOB_NODELIST"=$SLURM_JOB_NODELIST
+echo "SLURM_NNODES"=$SLURM_NNODES
+echo "SLURMTMPDIR="$SLURMTMPDIR
+echo "working directory = "$SLURM_SUBMIT_DIR
+# module use /projects/academic/cwx/modulefiles
+# module load python/my-python-3
+source ~/.bashrc
+# export PYTORCH_CUDA_ALLOC_CONF="max_split_size_mb=13312"
+echo "PYTORCH_CUDA_ALLOC_CONF"=$PYTORCH_CUDA_ALLOC_CONF
+
+# Conda
+conda activate NePs
+
+# conda install pytorch=1.6.0 torchvision=0.7.0 cudatoolkit=10.2 -c pytorch    
+# conda install -c conda-forge igl
+
+## List the module your are using
+module list
+ulimit -s unlimited
+which python
+which pytest
+nvidia-smi
+# cat SLRUM.script
+
+# build the cuda&C++ extensions of Pytorch
+cd model/conpu_v6/pointnet2/
+python setup.py install
+
+echo "cuda installed successfully"
+
+cd ../ 
+python train_script101_test.py
+
+
+
+
+
+
+################################### End of SLRUM Script ###################################
